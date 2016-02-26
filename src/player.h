@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ struct Player
 	int activeRaceCheckpoint;
 	std::size_t currentVisibleObjects;
 	std::size_t currentVisibleTextLabels;
+	int delayedCheckpoint;
+	int delayedRaceCheckpoint;
 	int interiorID;
 	std::size_t maxVisibleMapIcons;
 	std::size_t maxVisibleObjects;
@@ -45,6 +47,8 @@ struct Player
 	Eigen::Vector3f position;
 	float radiusMultipliers[STREAMER_MAX_TYPES];
 	int references;
+	bool requestingClass;
+	bool updateUsingCameraPosition;
 	bool updateWhenIdle;
 	SharedCell visibleCell;
 	int visibleCheckpoint;

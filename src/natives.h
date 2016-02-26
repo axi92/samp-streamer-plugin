@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,12 @@
 #define STREAMER_OPWS (9)
 
 #include "common.h"
+#include "utility.h"
 
 #define CHECK_PARAMS(m, n) \
 	if (params[0] != (m * 4)) \
 	{ \
-		sampgdk::logprintf("*** %s: Expecting %d parameter(s), but found %d", n, m, params[0] / sizeof(cell)); \
+		Utility::logError("%s: Expecting %d parameter(s), but found %d", n, m, params[0] / sizeof(cell)); \
 		return 0; \
 	}
 
@@ -48,14 +49,20 @@ namespace Natives
 	cell AMX_NATIVE_CALL Streamer_SetVisibleItems(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_GetRadiusMultiplier(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_SetRadiusMultiplier(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_GetTypePriority(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_SetTypePriority(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_GetCellDistance(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_SetCellDistance(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_GetCellSize(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_SetCellSize(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_ToggleErrorCallback(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_IsToggleErrorCallback(AMX *amx, cell *params);
 	// Updates
 	cell AMX_NATIVE_CALL Streamer_ProcessActiveItems(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_ToggleIdleUpdate(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_IsToggleIdleUpdate(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_ToggleCameraUpdate(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_IsToggleCameraUpdate(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_ToggleItemUpdate(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_IsToggleItemUpdate(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_Update(AMX *amx, cell *params);
@@ -73,6 +80,8 @@ namespace Natives
 	cell AMX_NATIVE_CALL Streamer_GetUpperBound(AMX *amx, cell *params);
 	// Miscellaneous
 	cell AMX_NATIVE_CALL Streamer_GetDistanceToItem(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_ToggleStaticItem(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_IsToggleStaticItem(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_GetItemInternalID(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_GetItemStreamerID(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_IsItemVisible(AMX *amx, cell *params);
@@ -88,6 +97,8 @@ namespace Natives
 	cell AMX_NATIVE_CALL GetDynamicObjectPos(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL SetDynamicObjectRot(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL GetDynamicObjectRot(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL SetDynamicObjectNoCameraCol(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL GetDynamicObjectNoCameraCol(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL MoveDynamicObject(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL StopDynamicObject(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL IsDynamicObjectMoving(AMX *amx, cell *params);
@@ -96,8 +107,10 @@ namespace Natives
 	cell AMX_NATIVE_CALL AttachDynamicObjectToPlayer(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL AttachDynamicObjectToVehicle(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL EditDynamicObject(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL IsDynamicObjectMaterialUsed(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL GetDynamicObjectMaterial(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL SetDynamicObjectMaterial(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL IsDynamicObjectMaterialTextUsed(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL GetDynamicObjectMaterialText(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL SetDynamicObjectMaterialText(AMX *amx, cell *params);
 	// Pickups
@@ -147,10 +160,12 @@ namespace Natives
 	cell AMX_NATIVE_CALL IsPlayerInAnyDynamicArea(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL IsAnyPlayerInDynamicArea(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL IsAnyPlayerInAnyDynamicArea(AMX *amx, cell *params);
-	cell AMX_NATIVE_CALL IsPointInDynamicArea(AMX *amx, cell *params);
-	cell AMX_NATIVE_CALL IsPointInAnyDynamicArea(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL GetPlayerDynamicAreas(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL GetPlayerNumberDynamicAreas(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL IsPointInDynamicArea(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL IsPointInAnyDynamicArea(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL GetDynamicAreasForPoint(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL GetNumberDynamicAreasForPoint(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL AttachDynamicAreaToObject(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL AttachDynamicAreaToPlayer(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL AttachDynamicAreaToVehicle(AMX *amx, cell *params);

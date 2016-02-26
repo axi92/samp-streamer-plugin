@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,20 @@ cell AMX_NATIVE_CALL Natives::Streamer_GetRadiusMultiplier(AMX *amx, cell *param
 cell AMX_NATIVE_CALL Natives::Streamer_SetRadiusMultiplier(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(3, "Streamer_SetRadiusMultiplier");
-	return static_cast<cell>(Utility::setRadiusMultiplier(static_cast<int>(params[1]), static_cast<float>(params[2]), static_cast<int>(params[3])) != 0);
+	return static_cast<cell>(Utility::setRadiusMultiplier(static_cast<int>(params[1]), amx_ctof(params[2]), static_cast<int>(params[3])) != 0);
+}
+
+
+cell AMX_NATIVE_CALL Natives::Streamer_GetTypePriority(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(2, "Streamer_GetTypePriority");
+	return Utility::convertContainerToArray(amx, params[1], params[2], core->getData()->typePriority);
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_SetTypePriority(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(2, "Streamer_SetTypePriority");
+	return Utility::convertArrayToContainer(amx, params[1], params[2], core->getData()->typePriority);
 }
 
 cell AMX_NATIVE_CALL Natives::Streamer_GetCellDistance(AMX *amx, cell *params)
@@ -106,4 +119,17 @@ cell AMX_NATIVE_CALL Natives::Streamer_SetCellSize(AMX *amx, cell *params)
 	core->getGrid()->setCellSize(amx_ctof(params[1]));
 	core->getGrid()->rebuildGrid();
 	return 1;
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_ToggleErrorCallback(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1, "Streamer_ToggleErrorCallback");
+	core->getData()->errorCallbackEnabled = static_cast<int>(params[1]) != 0;
+	return 1;
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_IsToggleErrorCallback(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1, "Streamer_IsToggleErrorCallback");
+	return static_cast<cell>(core->getData()->errorCallbackEnabled != 0);
 }

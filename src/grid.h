@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,8 +69,9 @@ public:
 	void removeRaceCheckpoint(const Item::SharedRaceCheckpoint &raceCheckpoint, bool reassign = false);
 	void removeTextLabel(const Item::SharedTextLabel &textLabel, bool reassign = false);
 
-	void findAllCells(Player &player, std::vector<SharedCell> &playerCells);
-	void findMinimalCells(Player &player, std::vector<SharedCell> &playerCells);
+	void findAllCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells);
+	void findMinimalCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells);
+	void findMinimalCellsForPoint(const Eigen::Vector2f &point, std::vector<SharedCell> &pointCells);
 private:
 	float cellDistance;
 	float cellSize;
@@ -94,7 +95,7 @@ private:
 	}
 
 	CellID getCellID(const Eigen::Vector2f &position, bool insert = true);
-	void processDiscoveredCells(Player &player, std::vector<SharedCell> &playerCells, const boost::unordered_set<CellID> &discoveredCells);
+	void processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells, const boost::unordered_set<CellID> &discoveredCells);
 };
 
 #endif

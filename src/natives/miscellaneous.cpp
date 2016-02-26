@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,7 +166,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_GetDistanceToItem(AMX *amx, cell *params)
 		}
 		default:
 		{
-			sampgdk::logprintf("*** Streamer_GetDistanceToItem: Invalid type specified");
+			Utility::logError("Streamer_GetDistanceToItem: Invalid type specified");
 			return 0;
 		}
 	}
@@ -186,7 +186,257 @@ cell AMX_NATIVE_CALL Natives::Streamer_GetDistanceToItem(AMX *amx, cell *params)
 		}
 		default:
 		{
-			sampgdk::logprintf("*** Streamer_GetDistanceToItem: Invalid number of dimensions specified (outside range of 2-3)");
+			Utility::logError("Streamer_GetDistanceToItem: Invalid number of dimensions specified (outside range of 2-3)");
+			return 0;
+		}
+	}
+	return 0;
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_ToggleStaticItem(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(3, "Streamer_ToggleStaticItem");
+	switch (static_cast<int>(params[1]))
+	{
+		case STREAMER_TYPE_OBJECT:
+		{
+			boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[2]));
+			if (o != core->getData()->objects.end())
+			{
+				if (static_cast<int>(params[3]))
+				{
+					if (o->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF && o->second->originalStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						o->second->originalStreamDistance = o->second->streamDistance;
+						o->second->streamDistance = -1.0f;
+					}
+				}
+				else
+				{
+					if (o->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && o->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						o->second->streamDistance = o->second->originalStreamDistance;
+						o->second->originalStreamDistance = -1.0f;
+					}
+				}
+				return 1;
+			}
+			break;
+		}
+		case STREAMER_TYPE_PICKUP:
+		{
+			boost::unordered_map<int, Item::SharedPickup>::iterator p = core->getData()->pickups.find(static_cast<int>(params[2]));
+			if (p != core->getData()->pickups.end())
+			{
+				if (static_cast<int>(params[3]))
+				{
+					if (p->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF && p->second->originalStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						p->second->originalStreamDistance = p->second->streamDistance;
+						p->second->streamDistance = -1.0f;
+					}
+				}
+				else
+				{
+					if (p->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && p->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						p->second->streamDistance = p->second->originalStreamDistance;
+						p->second->originalStreamDistance = -1.0f;
+					}
+				}
+				return 1;
+			}
+			break;
+		}
+		case STREAMER_TYPE_CP:
+		{
+			boost::unordered_map<int, Item::SharedCheckpoint>::iterator c = core->getData()->checkpoints.find(static_cast<int>(params[2]));
+			if (c != core->getData()->checkpoints.end())
+			{
+				if (static_cast<int>(params[3]))
+				{
+					if (c->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF && c->second->originalStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						c->second->originalStreamDistance = c->second->streamDistance;
+						c->second->streamDistance = -1.0f;
+					}
+				}
+				else
+				{
+					if (c->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && c->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						c->second->streamDistance = c->second->originalStreamDistance;
+						c->second->originalStreamDistance = -1.0f;
+					}
+				}
+				return 1;
+			}
+			break;
+		}
+		case STREAMER_TYPE_RACE_CP:
+		{
+			boost::unordered_map<int, Item::SharedRaceCheckpoint>::iterator r = core->getData()->raceCheckpoints.find(static_cast<int>(params[2]));
+			if (r != core->getData()->raceCheckpoints.end())
+			{
+				if (static_cast<int>(params[3]))
+				{
+					if (r->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF && r->second->originalStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						r->second->originalStreamDistance = r->second->streamDistance;
+						r->second->streamDistance = -1.0f;
+					}
+				}
+				else
+				{
+					if (r->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && r->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						r->second->streamDistance = r->second->originalStreamDistance;
+						r->second->originalStreamDistance = -1.0f;
+					}
+				}
+				return 1;
+			}
+			break;
+		}
+		case STREAMER_TYPE_MAP_ICON:
+		{
+			boost::unordered_map<int, Item::SharedMapIcon>::iterator m = core->getData()->mapIcons.find(static_cast<int>(params[2]));
+			if (m != core->getData()->mapIcons.end())
+			{
+				if (static_cast<int>(params[3]))
+				{
+					if (m->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF && m->second->originalStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						m->second->originalStreamDistance = m->second->streamDistance;
+						m->second->streamDistance = -1.0f;
+					}
+				}
+				else
+				{
+					if (m->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && m->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						m->second->streamDistance = m->second->originalStreamDistance;
+						m->second->originalStreamDistance = -1.0f;
+					}
+				}
+				return 1;
+			}
+			break;
+		}
+		case STREAMER_TYPE_3D_TEXT_LABEL:
+		{
+			boost::unordered_map<int, Item::SharedTextLabel>::iterator t = core->getData()->textLabels.find(static_cast<int>(params[2]));
+			if (t != core->getData()->textLabels.end())
+			{
+				if (static_cast<int>(params[3]))
+				{
+					if (t->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF && t->second->originalStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						t->second->originalStreamDistance = t->second->streamDistance;
+						t->second->streamDistance = -1.0f;
+					}
+				}
+				else
+				{
+					if (t->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && t->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+					{
+						t->second->streamDistance = t->second->originalStreamDistance;
+						t->second->originalStreamDistance = -1.0f;
+					}
+				}
+				return 1;
+			}
+			break;
+		}
+		default:
+		{
+			Utility::logError("Streamer_ToggleStaticItem: Invalid type specified");
+			return 0;
+		}
+	}
+	return 0;
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_IsToggleStaticItem(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(2, "Streamer_IsToggleStaticItem");
+	switch (static_cast<int>(params[1]))
+	{
+		case STREAMER_TYPE_OBJECT:
+		{
+			boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[2]));
+			if (o != core->getData()->objects.end())
+			{
+				if (o->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && o->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+				{
+					return 1;
+				}
+			}
+			return 0;
+		}
+		case STREAMER_TYPE_PICKUP:
+		{
+			boost::unordered_map<int, Item::SharedPickup>::iterator p = core->getData()->pickups.find(static_cast<int>(params[2]));
+			if (p != core->getData()->pickups.end())
+			{
+				if (p->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && p->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+				{
+					return 1;
+				}
+			}
+			return 0;
+		}
+		case STREAMER_TYPE_CP:
+		{
+			boost::unordered_map<int, Item::SharedCheckpoint>::iterator c = core->getData()->checkpoints.find(static_cast<int>(params[2]));
+			if (c != core->getData()->checkpoints.end())
+			{
+				if (c->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && c->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+				{
+					return 1;
+				}
+			}
+			return 0;
+		}
+		case STREAMER_TYPE_RACE_CP:
+		{
+			boost::unordered_map<int, Item::SharedRaceCheckpoint>::iterator r = core->getData()->raceCheckpoints.find(static_cast<int>(params[2]));
+			if (r != core->getData()->raceCheckpoints.end())
+			{
+				if (r->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && r->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+				{
+					return 1;
+				}
+			}
+			return 0;
+		}
+		case STREAMER_TYPE_MAP_ICON:
+		{
+			boost::unordered_map<int, Item::SharedMapIcon>::iterator m = core->getData()->mapIcons.find(static_cast<int>(params[2]));
+			if (m != core->getData()->mapIcons.end())
+			{
+				if (m->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && m->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+				{
+					return 1;
+				}
+			}
+			return 0;
+		}
+		case STREAMER_TYPE_3D_TEXT_LABEL:
+		{
+			boost::unordered_map<int, Item::SharedTextLabel>::iterator t = core->getData()->textLabels.find(static_cast<int>(params[2]));
+			if (t != core->getData()->textLabels.end())
+			{
+				if (t->second->streamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && t->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+				{
+					return 1;
+				}
+			}
+			return 0;
+		}
+		default:
+		{
+			Utility::logError("Streamer_IsToggleStaticItem: Invalid type specified");
 			return 0;
 		}
 	}
@@ -263,7 +513,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_GetItemInternalID(AMX *amx, cell *params)
 			}
 			default:
 			{
-				sampgdk::logprintf("*** Streamer_GetItemInternalID: Invalid type specified");
+				Utility::logError("Streamer_GetItemInternalID: Invalid type specified");
 				return 0;
 			}
 		}
@@ -350,7 +600,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_GetItemStreamerID(AMX *amx, cell *params)
 			}
 			default:
 			{
-				sampgdk::logprintf("*** Streamer_GetItemStreamerID: Invalid type specified");
+				Utility::logError("Streamer_GetItemStreamerID: Invalid type specified");
 				return 0;
 			}
 		}
@@ -428,7 +678,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_IsItemVisible(AMX *amx, cell *params)
 			}
 			default:
 			{
-				sampgdk::logprintf("*** Streamer_IsItemVisible: Invalid type specified");
+				Utility::logError("Streamer_IsItemVisible: Invalid type specified");
 				return 0;
 			}
 		}
@@ -566,7 +816,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_DestroyAllVisibleItems(AMX *amx, cell *pa
 			}
 			default:
 			{
-				sampgdk::logprintf("*** Streamer_DestroyAllVisibleItems: Invalid type specified");
+				Utility::logError("Streamer_DestroyAllVisibleItems: Invalid type specified");
 				return 0;
 			}
 		}
@@ -693,7 +943,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_CountVisibleItems(AMX *amx, cell *params)
 			}
 			default:
 			{
-				sampgdk::logprintf("*** Streamer_CountVisibleItems: Invalid type specified");
+				Utility::logError("Streamer_CountVisibleItems: Invalid type specified");
 				return 0;
 			}
 		}
@@ -805,6 +1055,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_DestroyAllItems(AMX *amx, cell *params)
 		}
 		case STREAMER_TYPE_AREA:
 		{
+			Utility::executeFinalAreaCallbacksForAllAreas(amx, serverWide);
 			boost::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.begin();
 			while (a != core->getData()->areas.end())
 			{
@@ -821,7 +1072,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_DestroyAllItems(AMX *amx, cell *params)
 		}
 		default:
 		{
-			sampgdk::logprintf("*** Streamer_DestroyAllItems: Invalid type specified");
+			Utility::logError("Streamer_DestroyAllItems: Invalid type specified");
 			return 0;
 		}
 	}
@@ -969,7 +1220,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_CountItems(AMX *amx, cell *params)
 		}
 		default:
 		{
-			sampgdk::logprintf("*** Streamer_CountItems: Invalid type specified");
+			Utility::logError("Streamer_CountItems: Invalid type specified");
 			return 0;
 		}
 	}

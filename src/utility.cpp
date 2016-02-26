@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 
 #include <Eigen/Core>
 
+#include <cmath>
 #include <set>
 #include <sstream>
 #include <string>
@@ -59,7 +60,7 @@ int Utility::checkInterfaceAndRegisterNatives(AMX *amx, AMX_NATIVE_INFO *amxNati
 			foundNatives = true;
 			if (!amxNativeTable[i].address)
 			{
-				sampgdk::logprintf("*** Streamer Plugin: Warning: Obsolete or invalid native \"%s\" found (script might need to be recompiled with the latest include file)", name);
+				Utility::logError("Obsolete or invalid native \"%s\" found (script might need to be recompiled with the latest include file)", name);
 				amxNativeTable[i].address = reinterpret_cast<cell>(hookedNative);
 				hookedNatives = true;
 			}
@@ -88,7 +89,7 @@ int Utility::checkInterfaceAndRegisterNatives(AMX *amx, AMX_NATIVE_INFO *amxNati
 			{
 				includeFileVersion << std::hex << std::showbase << includeFileValue;
 			}
-			sampgdk::logprintf("*** Streamer Plugin: Warning: Include file version (%s) does not match plugin version (%#x) (script might need to be recompiled with the latest include file)", includeFileVersion.str().c_str(), INCLUDE_FILE_VERSION);
+			Utility::logError("Include file version (%s) does not match plugin version (%#x) (script might need to be recompiled with the latest include file)", includeFileVersion.str().c_str(), INCLUDE_FILE_VERSION);
 		}
 	}
 	if (hookedNatives)
@@ -172,6 +173,7 @@ void Utility::destroyAllItemsInInterface(AMX *amx)
 			++t;
 		}
 	}
+	Utility::executeFinalAreaCallbacksForAllAreas(amx, false);
 	boost::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.begin();
 	while (a != core->getData()->areas.end())
 	{
@@ -191,11 +193,6 @@ boost::unordered_map<int, Item::SharedArea>::iterator Utility::destroyArea(boost
 	Item::Area::identifier.remove(a->first, core->getData()->areas.size());
 	for (boost::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
 	{
-		boost::unordered_set<int>::iterator i = p->second.internalAreas.find(a->first);
-		if (i != p->second.internalAreas.end())
-		{
-			core->getStreamer()->areaLeaveCallbacks.push_back(boost::make_tuple(a->first, p->first));
-		}
 		p->second.disabledAreas.erase(a->first);
 		p->second.internalAreas.erase(a->first);
 		p->second.visibleCell->areas.erase(a->first);
@@ -305,6 +302,96 @@ boost::unordered_map<int, Item::SharedTextLabel>::iterator Utility::destroyTextL
 	return core->getData()->textLabels.erase(t);
 }
 
+void Utility::executeFinalAreaCallbacks(int areaid)
+{
+	std::vector<boost::tuple<int, int> > callbacks;
+	boost::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.find(areaid);
+	if (a != core->getData()->areas.end())
+	{
+		for (boost::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
+		{
+			boost::unordered_set<int>::iterator i = p->second.internalAreas.find(a->first);
+			if (i != p->second.internalAreas.end())
+			{
+				callbacks.push_back(boost::make_tuple(a->first, p->first));
+			}
+		}
+	}
+	for (std::vector<boost::tuple<int, int> >::const_iterator c = callbacks.begin(); c != callbacks.end(); ++c)
+	{
+		for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
+		{
+			int amxIndex = 0;
+			if (!amx_FindPublic(*a, "OnPlayerLeaveDynamicArea", &amxIndex))
+			{
+				amx_Push(*a, static_cast<cell>(c->get<0>()));
+				amx_Push(*a, static_cast<cell>(c->get<1>()));
+				amx_Exec(*a, NULL, amxIndex);
+			}
+		}
+	}
+}
+
+void Utility::executeFinalAreaCallbacksForAllAreas(AMX *amx, bool ignoreInterface)
+{
+	std::vector<boost::tuple<int, int> > callbacks;
+	for (boost::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.begin(); a != core->getData()->areas.end(); ++a)
+	{
+		if (ignoreInterface || a->second->amx == amx)
+		{
+			for (boost::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
+			{
+				boost::unordered_set<int>::iterator i = p->second.internalAreas.find(a->first);
+				if (i != p->second.internalAreas.end())
+				{
+					callbacks.push_back(boost::make_tuple(a->first, p->first));
+				}
+			}
+		}
+	}
+	for (std::vector<boost::tuple<int, int> >::const_iterator c = callbacks.begin(); c != callbacks.end(); ++c)
+	{
+		for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
+		{
+			int amxIndex = 0;
+			if (!amx_FindPublic(*a, "OnPlayerLeaveDynamicArea", &amxIndex))
+			{
+				amx_Push(*a, static_cast<cell>(c->get<0>()));
+				amx_Push(*a, static_cast<cell>(c->get<1>()));
+				amx_Exec(*a, NULL, amxIndex);
+			}
+		}
+	}
+}
+
+void Utility::logError(const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	char buffer[MAX_BUFFER];
+	vsnprintf(buffer, sizeof(buffer), format, args);
+	buffer[sizeof(buffer) - 1] = '\0';
+	va_end(args);
+	if (core->getData()->errorCallbackEnabled)
+	{
+		for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
+		{
+			cell amxAddress = 0;
+			int amxIndex = 0;
+			if (!amx_FindPublic(*a, "Streamer_OnPluginError", &amxIndex))
+			{
+				amx_PushString(*a, &amxAddress, NULL, buffer, 0, 0);
+				amx_Exec(*a, NULL, amxIndex);
+				amx_Release(*a, amxAddress);
+			}
+		}
+	}
+	else
+	{
+		sampgdk::logprintf("*** Streamer Plugin: %s", buffer);
+	}
+}
+
 bool Utility::isPointInArea(const Eigen::Vector3f &point, const Item::SharedArea &area)
 {
 	switch (area->type)
@@ -376,12 +463,45 @@ bool Utility::isPointInArea(const Eigen::Vector3f &point, const Item::SharedArea
 	return false;
 }
 
+void Utility::projectPoint(const Eigen::Vector3f &point, const float &heading, Eigen::Vector3f &position)
+{
+	float angle = (std::atan2(point[0], point[1]) * (180.0f / (std::atan(1.0f) * 4.0f))) - heading, distance = std::sqrt((point[0] * point[0]) + (point[1] * point[1]));
+	position[0] += distance * std::sin(angle * ((std::atan(1.0f) * 4.0f) / 180.0f));
+	position[1] += distance * std::cos(angle * ((std::atan(1.0f) * 4.0f) / 180.0f));
+	position[2] += point[2];
+}
+
+void Utility::projectPoint(const Eigen::Vector3f &point, const Eigen::Vector3f &rotation, Eigen::Vector3f &position)
+{
+	Eigen::Vector3f rotRad = rotation * ((std::atan(1.0f) * 4.0f) / 180.0f), rotCos(std::cos(rotRad[0]), std::cos(rotRad[1]), std::cos(rotRad[2])), rotSin(std::sin(rotRad[0]), std::sin(rotRad[1]), std::sin(rotRad[2]));
+	position[0] += (point[0] * rotCos[1] * rotCos[2]) - (point[0] * rotSin[0] * rotSin[1] * rotSin[2]) - (point[1] * rotCos[0] * rotSin[2]) + (point[2] * rotSin[1] * rotCos[2]) + (point[2] * rotSin[0] * rotCos[1] * rotSin[2]);
+	position[1] += (point[0] * rotCos[1] * rotSin[2]) + (point[0] * rotSin[0] * rotSin[1] * rotCos[2]) + (point[1] * rotCos[0] * rotCos[2]) + (point[2] * rotSin[1] * rotSin[2]) - (point[2] * rotSin[0] * rotCos[1] * rotCos[2]);
+	position[2] += -(point[0] * rotCos[0] * rotSin[1]) + (point[1] * rotSin[0]) + (point[2] * rotCos[0] * rotCos[1]);
+}
+
+void Utility::projectPoint(const Eigen::Vector3f &point, const Eigen::Vector4f &quaternion, Eigen::Vector3f &position)
+{
+	Eigen::Matrix3f matrix = Eigen::Matrix3f::Zero();
+	matrix(0, 0) = 1 - 2 * ((quaternion[1] * quaternion[1]) + (quaternion[2] * quaternion[2]));
+	matrix(0, 1) = 2 * ((quaternion[0] * quaternion[1]) - (quaternion[2] * quaternion[3]));
+	matrix(0, 2) = 2 * ((quaternion[0] * quaternion[2]) + (quaternion[1] * quaternion[3]));
+	matrix(1, 0) = 2 * ((quaternion[0] * quaternion[1]) + (quaternion[2] * quaternion[3]));
+	matrix(1, 1) = 1 - 2 * ((quaternion[0] * quaternion[0]) + (quaternion[2] * quaternion[2]));
+	matrix(1, 2) = 2 * ((quaternion[1] * quaternion[2]) - (quaternion[0] * quaternion[3]));
+	matrix(2, 0) = 2 * ((quaternion[0] * quaternion[2]) - (quaternion[1] * quaternion[3]));
+	matrix(2, 1) = 2 * ((quaternion[1] * quaternion[2]) + (quaternion[0] * quaternion[3]));
+	matrix(2, 2) = 1 - 2 * ((quaternion[0] * quaternion[0]) + (quaternion[1] * quaternion[1]));
+	position[0] += -((point[2] * matrix(2, 0)) + (point[1] * matrix(2, 1)) + (point[0] * matrix(2, 2)));
+	position[1] += (point[2] * matrix(1, 0)) + (point[1] * matrix(1, 1)) + (point[0] * matrix(1, 2));
+	position[2] += (point[2] * matrix(0, 0)) + (point[1] * matrix(0, 1)) + (point[0] * matrix(0, 2));
+}
+
 std::size_t Utility::getGlobalMaxVisibleItems(int type, int playerid)
 {
 	if (playerid >= 0 && playerid < MAX_PLAYERS)
 	{
 		boost::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-		if (p == core->getData()->players.end())
+		if (p != core->getData()->players.end())
 		{
 			switch (type)
 			{
@@ -408,7 +528,7 @@ bool Utility::setMaxVisibleItems(int type, std::size_t value, int playerid)
 	if (playerid >= 0 && playerid < MAX_PLAYERS)
 	{
 		boost::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-		if (p == core->getData()->players.end())
+		if (p != core->getData()->players.end())
 		{
 			switch (type)
 			{
@@ -458,7 +578,7 @@ float Utility::getRadiusMultiplier(int type, int playerid)
 		if (playerid >= 0 && playerid < MAX_PLAYERS)
 		{
 			boost::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-			if (p == core->getData()->players.end())
+			if (p != core->getData()->players.end())
 			{
 				return p->second.radiusMultipliers[type];
 			}
@@ -474,7 +594,7 @@ bool Utility::setRadiusMultiplier(int type, float value, int playerid)
 		if (playerid >= 0 && playerid < MAX_PLAYERS)
 		{
 			boost::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-			if (p == core->getData()->players.end())
+			if (p != core->getData()->players.end())
 			{
 				p->second.radiusMultipliers[type] = value;
 				return true;

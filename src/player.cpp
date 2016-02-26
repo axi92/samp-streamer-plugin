@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ Player::Player(int id)
 	activeRaceCheckpoint = 0;
 	currentVisibleObjects = core->getData()->getGlobalMaxVisibleItems(STREAMER_TYPE_OBJECT);
 	currentVisibleTextLabels = core->getData()->getGlobalMaxVisibleItems(STREAMER_TYPE_3D_TEXT_LABEL);
+	delayedCheckpoint = 0;
+	delayedRaceCheckpoint = 0;
 	enabledItems.set();
 	interiorID = 0;
 	maxVisibleMapIcons = core->getData()->getGlobalMaxVisibleItems(STREAMER_TYPE_MAP_ICON);
@@ -45,6 +47,8 @@ Player::Player(int id)
 	radiusMultipliers[STREAMER_TYPE_MAP_ICON] = core->getData()->getGlobalRadiusMultiplier(STREAMER_TYPE_MAP_ICON);
 	radiusMultipliers[STREAMER_TYPE_3D_TEXT_LABEL] = core->getData()->getGlobalRadiusMultiplier(STREAMER_TYPE_3D_TEXT_LABEL);
 	radiusMultipliers[STREAMER_TYPE_AREA] = core->getData()->getGlobalRadiusMultiplier(STREAMER_TYPE_AREA);
+	requestingClass = false;
+	updateUsingCameraPosition = false;
 	updateWhenIdle = false;
 	visibleCell = SharedCell(new Cell());
 	visibleCheckpoint = 0;

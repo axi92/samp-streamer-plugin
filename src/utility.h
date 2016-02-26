@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@
 #include <bitset>
 #include <string>
 
+#define MAX_BUFFER (1024)
+
 namespace Utility
 {
 	cell AMX_NATIVE_CALL hookedNative(AMX *amx, cell *params);
@@ -44,7 +46,16 @@ namespace Utility
 	boost::unordered_map<int, Item::SharedRaceCheckpoint>::iterator destroyRaceCheckpoint(boost::unordered_map<int, Item::SharedRaceCheckpoint>::iterator r);
 	boost::unordered_map<int, Item::SharedTextLabel>::iterator destroyTextLabel(boost::unordered_map<int, Item::SharedTextLabel>::iterator t);
 
+	void executeFinalAreaCallbacks(int areaid);
+	void executeFinalAreaCallbacksForAllAreas(AMX *amx, bool ignoreInterface);
+
+	void logError(const char *format, ...);
+
 	bool isPointInArea(const Eigen::Vector3f &point, const Item::SharedArea &area);
+
+	void projectPoint(const Eigen::Vector3f &point, const float &heading, Eigen::Vector3f &position);
+	void projectPoint(const Eigen::Vector3f &point, const Eigen::Vector3f &rotation, Eigen::Vector3f &position);
+	void projectPoint(const Eigen::Vector3f &point, const Eigen::Vector4f &quaternion, Eigen::Vector3f &position);
 
 	std::size_t getGlobalMaxVisibleItems(int type, int playerid);
 	bool setMaxVisibleItems(int type, std::size_t value, int playerid);
@@ -96,7 +107,7 @@ namespace Utility
 	}
 
 	template<typename T>
-	inline int getFirstValueInContainer(std::vector<T> &container)
+	inline int getFirstValueInContainer(const std::vector<T> &container)
 	{
 		if (!container.empty())
 		{
@@ -106,7 +117,7 @@ namespace Utility
 	}
 
 	template<typename T>
-	inline int getFirstValueInContainer(boost::unordered_set<T> &container)
+	inline int getFirstValueInContainer(const boost::unordered_set<T> &container)
 	{
 		boost::unordered_set<int>::iterator i = container.begin();
 		if (i != container.end())
@@ -117,7 +128,7 @@ namespace Utility
 	}
 
 	template<std::size_t N>
-	inline int getFirstValueInContainer(std::bitset<N> &container)
+	inline int getFirstValueInContainer(const std::bitset<N> &container)
 	{
 		if (container.any())
 		{
@@ -154,7 +165,7 @@ namespace Utility
 	}
 
 	template<typename T>
-	inline bool isInContainer(std::vector<T> &container, T value)
+	inline bool isInContainer(const std::vector<T> &container, const T value)
 	{
 		if (std::find(container.begin(), container.end(), value) != container.end())
 		{
@@ -164,7 +175,7 @@ namespace Utility
 	}
 
 	template<typename T>
-	inline bool isInContainer(boost::unordered_set<T> &container, T value)
+	inline bool isInContainer(const boost::unordered_set<T> &container, const T value)
 	{
 		if (value >= 0)
 		{
@@ -184,7 +195,7 @@ namespace Utility
 	}
 
 	template<std::size_t N, typename T>
-	inline bool isInContainer(std::bitset<N> &container, T value)
+	inline bool isInContainer(const std::bitset<N> &container, const T value)
 	{
 		if (value >= 0 && static_cast<std::size_t>(value) < N)
 		{
@@ -196,6 +207,19 @@ namespace Utility
 		else
 		{
 			if (container.count() == N)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	template<typename T>
+	inline bool isContainerWithinContainer(const boost::unordered_set<T> &mainContainer, const boost::unordered_set<T> &overlappingContainer)
+	{
+		for (typename boost::unordered_set<T>::const_iterator o = overlappingContainer.begin(); o != overlappingContainer.end(); ++o)
+		{
+			if (mainContainer.find(*o) != mainContainer.end())
 			{
 				return true;
 			}
@@ -294,12 +318,12 @@ namespace Utility
 	}
 
 	template<typename T>
-	inline bool convertContainerToArray(AMX *amx, cell output, cell size, std::vector<T> &container)
+	inline bool convertContainerToArray(AMX *amx, cell output, cell size, const std::vector<T> &container)
 	{
 		cell *array = NULL;
 		std::size_t i = 0;
 		amx_GetAddr(amx, output, &array);
-		for (typename std::vector<T>::iterator c = container.begin(); c != container.end(); ++c)
+		for (typename std::vector<T>::const_iterator c = container.begin(); c != container.end(); ++c)
 		{
 			if (i == static_cast<std::size_t>(size))
 			{
@@ -311,12 +335,12 @@ namespace Utility
 	}
 
 	template<typename T>
-	inline bool convertContainerToArray(AMX *amx, cell output, cell size, boost::unordered_set<T> &container)
+	inline bool convertContainerToArray(AMX *amx, cell output, cell size, const boost::unordered_set<T> &container)
 	{
 		cell *array = NULL;
 		std::size_t i = 0;
 		amx_GetAddr(amx, output, &array);
-		for (typename boost::unordered_set<T>::iterator c = container.begin(); c != container.end(); ++c)
+		for (typename boost::unordered_set<T>::const_iterator c = container.begin(); c != container.end(); ++c)
 		{
 			if (i == static_cast<std::size_t>(size))
 			{
@@ -328,7 +352,7 @@ namespace Utility
 	}
 
 	template<std::size_t N>
-	inline bool convertContainerToArray(AMX *amx, cell output, cell size, std::bitset<N> &container)
+	inline bool convertContainerToArray(AMX *amx, cell output, cell size, const std::bitset<N> &container)
 	{
 		cell *array = NULL;
 		std::size_t i = 0;

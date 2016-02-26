@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ cell AMX_NATIVE_CALL Natives::Streamer_GetUpperBound(AMX *amx, cell *params)
 		}
 		default:
 		{
-			sampgdk::logprintf("*** Streamer_GetUpperBound: Invalid type specified");
+			Utility::logError("Streamer_GetUpperBound: Invalid type specified");
 			return 0;
 		}
 	}

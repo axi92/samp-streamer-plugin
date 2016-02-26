@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@
 
 cell AMX_NATIVE_CALL Natives::CreateDynamicObject(AMX *amx, cell *params)
 {
-	CHECK_PARAMS(12, "CreateDynamicObject");
+	CHECK_PARAMS(13, "CreateDynamicObject");
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_OBJECT) == core->getData()->objects.size())
 	{
 		return 0;
@@ -44,6 +44,8 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicObject(AMX *amx, cell *params)
 	Item::SharedObject object(new Item::Object);
 	object->amx = amx;
 	object->objectID = objectID;
+	object->noCameraCollision = false;
+	object->originalStreamDistance = -1.0f;
 	object->modelID = static_cast<int>(params[1]);
 	object->position = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
 	object->rotation = Eigen::Vector3f(amx_ctof(params[5]), amx_ctof(params[6]), amx_ctof(params[7]));
@@ -52,6 +54,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicObject(AMX *amx, cell *params)
 	Utility::addToContainer(object->players, static_cast<int>(params[10]));
 	object->streamDistance = amx_ctof(params[11]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[11]) : amx_ctof(params[11]) * amx_ctof(params[11]);
 	object->drawDistance = amx_ctof(params[12]);
+	Utility::addToContainer(object->areas, static_cast<int>(params[13]));
 	core->getGrid()->addObject(object);
 	core->getData()->objects.insert(std::make_pair(objectID, object));
 	return static_cast<cell>(objectID);
@@ -184,6 +187,37 @@ cell AMX_NATIVE_CALL Natives::GetDynamicObjectRot(AMX *amx, cell *params)
 	return 0;
 }
 
+cell AMX_NATIVE_CALL Natives::SetDynamicObjectNoCameraCol(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1, "SetDynamicObjectNoCameraCol");
+	boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
+	if (o != core->getData()->objects.end())
+	{
+		o->second->noCameraCollision = true;
+		for (boost::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
+		{
+			boost::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
+			if (i != p->second.internalObjects.end())
+			{
+				SetPlayerObjectNoCameraCol(p->first, i->second);
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
+
+cell AMX_NATIVE_CALL Natives::GetDynamicObjectNoCameraCol(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1, "GetDynamicObjectNoCameraCol");
+	boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
+	if (o != core->getData()->objects.end())
+	{
+		return o->second->noCameraCollision != 0;
+	}
+	return 0;
+}
+
 cell AMX_NATIVE_CALL Natives::MoveDynamicObject(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8, "MoveDynamicObject");
@@ -196,7 +230,7 @@ cell AMX_NATIVE_CALL Natives::MoveDynamicObject(AMX *amx, cell *params)
 	{
 		if (o->second->attach)
 		{
-			sampgdk::logprintf("MoveDynamicObject: Object is currently attached and cannot be moved");
+			Utility::logError("MoveDynamicObject: Object is currently attached and cannot be moved");
 			return 0;
 		}
 		Eigen::Vector3f position(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
@@ -273,10 +307,29 @@ cell AMX_NATIVE_CALL Natives::AttachCameraToDynamicObject(AMX *amx, cell *params
 	boost::unordered_map<int, Player>::iterator p = core->getData()->players.find(static_cast<int>(params[1]));
 	if (p != core->getData()->players.end())
 	{
+		int internalID = INVALID_GENERIC_ID;
 		boost::unordered_map<int, int>::iterator i = p->second.internalObjects.find(static_cast<int>(params[2]));
-		if (i != p->second.internalObjects.end())
+		if (i == p->second.internalObjects.end())
 		{
-			AttachCameraToPlayerObject(p->first, i->second);
+			boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[2]));
+			if (o != core->getData()->objects.end())
+			{
+				p->second.position = Eigen::Vector3f(o->second->position[0], o->second->position[1], o->second->position[2]);
+				core->getStreamer()->startManualUpdate(p->second, STREAMER_TYPE_OBJECT);
+			}
+			boost::unordered_map<int, int>::iterator j = p->second.internalObjects.find(static_cast<int>(params[2]));
+			if (j != p->second.internalObjects.end())
+			{
+				internalID = j->second;
+			}
+		}
+		else
+		{
+			internalID = i->second;
+		}
+		if (internalID != INVALID_GENERIC_ID)
+		{
+			AttachCameraToPlayerObject(p->first, internalID);
 			return 1;
 		}
 	}
@@ -286,12 +339,17 @@ cell AMX_NATIVE_CALL Natives::AttachCameraToDynamicObject(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(9, "AttachDynamicObjectToObject");
+	if (sampgdk::FindNative("SetPlayerGravity") == NULL)
+	{
+		Utility::logError("AttachDynamicObjectToObject: YSF plugin must be loaded to attach objects to objects");
+		return 0;
+	}
 	boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
 	if (o != core->getData()->objects.end())
 	{
 		if (o->second->move)
 		{
-			sampgdk::logprintf("AttachDynamicObjectToObject: Object is currently moving and cannot be attached");
+			Utility::logError("AttachDynamicObjectToObject: Object is currently moving and must be stopped first");
 			return 0;
 		}
 		o->second->attach = boost::intrusive_ptr<Item::Object::Attach>(new Item::Object::Attach);
@@ -309,7 +367,11 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params
 				boost::unordered_map<int, int>::iterator j = p->second.internalObjects.find(o->second->attach->object);
 				if (j != p->second.internalObjects.end())
 				{
-					sampgdk::InvokeNative(sampgdk::FindNative("AttachPlayerObjectToObject"), "dddffffffb", p->first, i->second, j->second, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
+					AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToObject");
+					if (native != NULL)
+					{
+						sampgdk::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
+					}
 					for (boost::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.begin(); m != o->second->materials.end(); ++m)
 					{
 						if (m->second.main)
@@ -324,12 +386,25 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params
 				}
 			}
 		}
-		if (static_cast<int>(params[2]) != INVALID_GENERIC_ID)
+		if (static_cast<int>(params[2]) != INVALID_STREAMER_ID)
 		{
+			boost::unordered_map<int, Item::SharedObject>::iterator p = core->getData()->objects.find(static_cast<int>(params[2]));
+			if (p != core->getData()->objects.end())
+			{
+				if (o->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF && p->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+				{
+					o->second->originalStreamDistance = o->second->streamDistance;
+					o->second->streamDistance = p->second->streamDistance + static_cast<float>(boost::geometry::distance(o->second->position, p->second->position));
+				}
+			}
 			core->getStreamer()->attachedObjects.insert(o->second);
 		}
 		else
 		{
+			if (o->second->originalStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF && o->second->streamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
+			{
+				o->second->streamDistance = o->second->originalStreamDistance;
+			}
 			o->second->attach.reset();
 			core->getStreamer()->attachedObjects.erase(o->second);
 			core->getGrid()->removeObject(o->second, true);
@@ -342,16 +417,21 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToPlayer(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8, "AttachDynamicObjectToPlayer");
+	if (sampgdk::FindNative("SetPlayerGravity") == NULL)
+	{
+		Utility::logError("AttachDynamicObjectToPlayer: YSF plugin must be loaded to attach objects to players");
+		return 0;
+	}
 	boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
 	if (o != core->getData()->objects.end())
 	{
 		if (o->second->move)
 		{
-			sampgdk::logprintf("AttachDynamicObjectToPlayer: Object is currently moving and cannot be attached");
+			Utility::logError("AttachDynamicObjectToPlayer: Object is currently moving and must be stopped first");
 			return 0;
 		}
 		o->second->attach = boost::intrusive_ptr<Item::Object::Attach>(new Item::Object::Attach);
-		o->second->attach->object = INVALID_GENERIC_ID;
+		o->second->attach->object = INVALID_STREAMER_ID;
 		o->second->attach->vehicle = INVALID_GENERIC_ID;
 		o->second->attach->player = static_cast<int>(params[2]);
 		o->second->attach->offset = Eigen::Vector3f(amx_ctof(params[3]), amx_ctof(params[4]), amx_ctof(params[5]));
@@ -361,7 +441,11 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToPlayer(AMX *amx, cell *params
 			boost::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				sampgdk::InvokeNative(sampgdk::FindNative("AttachPlayerObjectToPlayer"), "dddffffff", p->first, i->second, o->second->attach->player, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
+				AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToPlayer");
+				if (native != NULL)
+				{
+					sampgdk::InvokeNative(native, "dddffffff", p->first, i->second, o->second->attach->player, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
+				}
 				for (boost::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.begin(); m != o->second->materials.end(); ++m)
 				{
 					if (m->second.main)
@@ -398,11 +482,11 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToVehicle(AMX *amx, cell *param
 	{
 		if (o->second->move)
 		{
-			sampgdk::logprintf("AttachDynamicObjectToVehicle: Object is currently moving and cannot be attached");
+			Utility::logError("AttachDynamicObjectToVehicle: Object is currently moving and must be stopped first");
 			return 0;
 		}
 		o->second->attach = boost::intrusive_ptr<Item::Object::Attach>(new Item::Object::Attach);
-		o->second->attach->object = INVALID_GENERIC_ID;
+		o->second->attach->object = INVALID_STREAMER_ID;
 		o->second->attach->player = INVALID_GENERIC_ID;
 		o->second->attach->vehicle = static_cast<int>(params[2]);
 		o->second->attach->offset = Eigen::Vector3f(amx_ctof(params[3]), amx_ctof(params[4]), amx_ctof(params[5]));
@@ -447,12 +531,48 @@ cell AMX_NATIVE_CALL Natives::EditDynamicObject(AMX *amx, cell *params)
 	boost::unordered_map<int, Player>::iterator p = core->getData()->players.find(static_cast<int>(params[1]));
 	if (p != core->getData()->players.end())
 	{
-		core->getStreamer()->startManualUpdate(p->second, true);
+		int internalID = INVALID_GENERIC_ID;
 		boost::unordered_map<int, int>::iterator i = p->second.internalObjects.find(static_cast<int>(params[2]));
-		if (i != p->second.internalObjects.end())
+		if (i == p->second.internalObjects.end())
 		{
-			EditPlayerObject(p->first, i->second);
+			boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[2]));
+			if (o != core->getData()->objects.end())
+			{
+				p->second.position = Eigen::Vector3f(o->second->position[0], o->second->position[1], o->second->position[2]);
+				core->getStreamer()->startManualUpdate(p->second, STREAMER_TYPE_OBJECT);
+			}
+			boost::unordered_map<int, int>::iterator j = p->second.internalObjects.find(static_cast<int>(params[2]));
+			if (j != p->second.internalObjects.end())
+			{
+				internalID = j->second;
+			}
+		}
+		else
+		{
+			internalID = i->second;
+		}
+		if (internalID != INVALID_GENERIC_ID)
+		{
+			EditPlayerObject(p->first, internalID);
 			return 1;
+		}
+	}
+	return 0;
+}
+
+cell AMX_NATIVE_CALL Natives::IsDynamicObjectMaterialUsed(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(2, "IsDynamicObjectMaterialUsed");
+	boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
+	if (o != core->getData()->objects.end())
+	{
+		boost::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.find(static_cast<int>(params[2]));
+		if (m != o->second->materials.end())
+		{
+			if (m->second.main)
+			{
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -502,6 +622,24 @@ cell AMX_NATIVE_CALL Natives::SetDynamicObjectMaterial(AMX *amx, cell *params)
 		}
 		o->second->materials[index].text.reset();
 		return 1;
+	}
+	return 0;
+}
+
+cell AMX_NATIVE_CALL Natives::IsDynamicObjectMaterialTextUsed(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(2, "IsDynamicObjectMaterialTextUsed");
+	boost::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
+	if (o != core->getData()->objects.end())
+	{
+		boost::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.find(static_cast<int>(params[2]));
+		if (m != o->second->materials.end())
+		{
+			if (m->second.text)
+			{
+				return 1;
+			}
+		}
 	}
 	return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@
 
 cell AMX_NATIVE_CALL Natives::CreateDynamicPickup(AMX *amx, cell *params)
 {
-	CHECK_PARAMS(9, "CreateDynamicPickup");
+	CHECK_PARAMS(10, "CreateDynamicPickup");
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_PICKUP) == core->getData()->pickups.size())
 	{
 		return 0;
@@ -39,7 +39,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicPickup(AMX *amx, cell *params)
 	Item::SharedPickup pickup(new Item::Pickup);
 	pickup->amx = amx;
 	pickup->pickupID = pickupID;
-	pickup->worldID = 0;
+	pickup->originalStreamDistance = -1.0f;
 	pickup->modelID = static_cast<int>(params[1]);
 	pickup->type = static_cast<int>(params[2]);
 	pickup->position = Eigen::Vector3f(amx_ctof(params[3]), amx_ctof(params[4]), amx_ctof(params[5]));
@@ -47,6 +47,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicPickup(AMX *amx, cell *params)
 	Utility::addToContainer(pickup->interiors, static_cast<int>(params[7]));
 	Utility::addToContainer(pickup->players, static_cast<int>(params[8]));
 	pickup->streamDistance = amx_ctof(params[9]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[9]) : amx_ctof(params[9]) * amx_ctof(params[9]);
+	Utility::addToContainer(pickup->areas, static_cast<int>(params[10]));
 	core->getGrid()->addPickup(pickup);
 	core->getData()->pickups.insert(std::make_pair(pickupID, pickup));
 	return static_cast<cell>(pickupID);

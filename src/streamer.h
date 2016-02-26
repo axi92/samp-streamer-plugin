@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@
 
 #define INVALID_ALTERNATE_ID (-1)
 #define INVALID_GENERIC_ID (0xFFFF)
+#define INVALID_STREAMER_ID (0)
 
 #include "cell.h"
 #include "common.h"
 #include "item.h"
 #include "player.h"
+#include "utility.h"
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/unordered_set.hpp>
@@ -55,9 +57,6 @@ public:
 	boost::unordered_set<Item::SharedObject> attachedObjects;
 	boost::unordered_set<Item::SharedTextLabel> attachedTextLabels;
 	boost::unordered_set<Item::SharedObject> movingObjects;
-
-	std::vector<boost::tuple<int, int> > areaEnterCallbacks;
-	std::vector<boost::tuple<int, int> > areaLeaveCallbacks;
 private:
 	void calculateAverageUpdateTime();
 
@@ -85,12 +84,20 @@ private:
 	float averageUpdateTime;
 	bool processingFinalPlayer;
 
+	std::vector<boost::tuple<int, int> > areaEnterCallbacks;
+	std::vector<boost::tuple<int, int> > areaLeaveCallbacks;
 	std::vector<int> objectMoveCallbacks;
 
 	template<std::size_t N, typename T>
-	inline bool checkPlayer(const std::bitset<N> &a, const T &b, const boost::unordered_set<T> &c, const T &d, const boost::unordered_set<T> &e, const T &f)
+	inline bool doesPlayerSatisfyConditions(const std::bitset<N> &a, const T &b, const boost::unordered_set<T> &c, const T &d, const boost::unordered_set<T> &e, const T &f)
 	{
 		return (a[b] && (c.empty() || c.find(d) != c.end()) && (e.empty() || e.find(f) != e.end()));
+	}
+
+	template<std::size_t N, typename T>
+	inline bool doesPlayerSatisfyConditions(const std::bitset<N> &a, const T &b, const boost::unordered_set<T> &c, const T &d, const boost::unordered_set<T> &e, const T &f, const boost::unordered_set<T> &g, const boost::unordered_set<T> &h)
+	{
+		return (a[b] && (c.empty() || c.find(d) != c.end()) && (e.empty() || e.find(f) != e.end()) && (g.empty() || Utility::isContainerWithinContainer(g, h)));
 	}
 
 	template<class Iterator, class Container>

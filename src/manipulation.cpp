@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -539,6 +539,33 @@ int Manipulation::getFloatData(AMX *amx, cell *params)
 						}
 						return 0;
 					}
+					case AttachOffsetX:
+					{
+						if (a->second->attach)
+						{
+							Utility::storeFloatInNative(amx, params[4], a->second->attach->offset[0]);
+							return 1;
+						}
+						return 0;
+					}
+					case AttachOffsetY:
+					{
+						if (a->second->attach)
+						{
+							Utility::storeFloatInNative(amx, params[4], a->second->attach->offset[1]);
+							return 1;
+						}
+						return 0;
+					}
+					case AttachOffsetZ:
+					{
+						if (a->second->attach)
+						{
+							Utility::storeFloatInNative(amx, params[4], a->second->attach->offset[2]);
+							return 1;
+						}
+						return 0;
+					}
 					case MaxX:
 					{
 						switch (a->second->type)
@@ -719,17 +746,17 @@ int Manipulation::getFloatData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_GetFloatData: Invalid data specified");
+			Utility::logError("Streamer_GetFloatData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_GetFloatData: Invalid ID specified");
+			Utility::logError("Streamer_GetFloatData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_GetFloatData: Invalid type specified");
+			Utility::logError("Streamer_GetFloatData: Invalid type specified");
 			break;
 		}
 	}
@@ -817,7 +844,7 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 					case MoveY:
 					case MoveZ:
 					{
-						sampgdk::logprintf("*** Streamer_SetFloatData: Use MoveDynamicObject to adjust moving object data");
+						Utility::logError("Streamer_SetFloatData: Use MoveDynamicObject to adjust moving object data");
 						return 0;
 					}
 					case RX:
@@ -848,7 +875,7 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 					{
 						if (o->second->move)
 						{
-							sampgdk::logprintf("*** Streamer_SetFloatData: Object must be stopped first");
+							Utility::logError("Streamer_SetFloatData: Object is currently moving and must be stopped first");
 							return 0;
 						}
 						o->second->position[0] = amx_ctof(params[4]);
@@ -863,7 +890,7 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 					{
 						if (o->second->move)
 						{
-							sampgdk::logprintf("*** Streamer_SetFloatData: Object must be stopped first");
+							Utility::logError("Streamer_SetFloatData: Object is currently moving and must be stopped first");
 							return 0;
 						}
 						o->second->position[1] = amx_ctof(params[4]);
@@ -878,7 +905,7 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 					{
 						if (o->second->move)
 						{
-							sampgdk::logprintf("*** Streamer_SetFloatData: Object must be stopped first");
+							Utility::logError("Streamer_SetFloatData: Object is currently moving and must be stopped first");
 							return 0;
 						}
 						o->second->position[2] = amx_ctof(params[4]);
@@ -903,8 +930,7 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 						if (i != p->second.internalObjects.end())
 						{
 							DestroyPlayerObject(p->first, i->second);
-							i->second = CreatePlayerObject(p->first, o->second->modelID, 0.0f, 0.0f ,0.0f, o->second->rotation[0], o->second->rotation[1], o->second->rotation[2], o->second->drawDistance);
-							SetPlayerObjectPos(p->first, i->second, o->second->position[0], o->second->position[1], o->second->position[2]);
+							i->second = CreatePlayerObject(p->first, o->second->modelID, o->second->position[0], o->second->position[1], o->second->position[2], o->second->rotation[0], o->second->rotation[1], o->second->rotation[2], o->second->drawDistance);
 							if (o->second->attach)
 							{
 								if (o->second->attach->object != INVALID_GENERIC_ID)
@@ -912,12 +938,20 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 									boost::unordered_map<int, int>::iterator j = p->second.internalObjects.find(o->second->attach->object);
 									if (j != p->second.internalObjects.end())
 									{
-										sampgdk::InvokeNative(sampgdk::FindNative("AttachPlayerObjectToObject"), "dddffffffb", p->first, i->second, j->second, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
+										AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToObject");
+										if (native != NULL)
+										{
+											sampgdk::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
+										}
 									}
 								}
 								else if (o->second->attach->player != INVALID_GENERIC_ID)
 								{
-									sampgdk::InvokeNative(sampgdk::FindNative("AttachPlayerObjectToPlayer"), "dddffffff", p->first, i->second, o->second->attach->player, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
+									AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToPlayer");
+									if (native != NULL)
+									{
+										sampgdk::InvokeNative(native, "dddffffff", p->first, i->second, o->second->attach->player, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
+									}
 								}
 								else if (o->second->attach->vehicle != INVALID_GENERIC_ID)
 								{
@@ -938,6 +972,10 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 								{
 									SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
 								}
+							}
+							if (o->second->noCameraCollision)
+							{
+								SetPlayerObjectNoCameraCol(p->first, i->second);
 							}
 						}
 					}
@@ -1084,7 +1122,8 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 						if (p->second.visibleCheckpoint == c->first)
 						{
 							DisablePlayerCheckpoint(p->first);
-							SetPlayerCheckpoint(p->first, c->second->position[0], c->second->position[1], c->second->position[2], c->second->size);
+							p->second.activeCheckpoint = 0;
+							p->second.visibleCheckpoint = 0;
 						}
 					}
 				}
@@ -1179,7 +1218,8 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 						if (p->second.visibleRaceCheckpoint == r->first)
 						{
 							DisablePlayerRaceCheckpoint(p->first);
-							SetPlayerRaceCheckpoint(p->first, r->second->type, r->second->position[0], r->second->position[1], r->second->position[2], r->second->next[0], r->second->next[1], r->second->next[2], r->second->size);
+							p->second.activeRaceCheckpoint = 0;
+							p->second.visibleRaceCheckpoint = 0;
 						}
 					}
 				}
@@ -1354,6 +1394,30 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AttachOffsetX:
+					{
+						if (a->second->attach)
+						{
+							a->second->attach->offset[0] = amx_ctof(params[4]);
+						}
+						break;
+					}
+					case AttachOffsetY:
+					{
+						if (a->second->attach)
+						{
+							a->second->attach->offset[1] = amx_ctof(params[4]);
+						}
+						break;
+					}
+					case AttachOffsetZ:
+					{
+						if (a->second->attach)
+						{
+							a->second->attach->offset[2] = amx_ctof(params[4]);
+						}
+						break;
+					}
 					case MaxX:
 					{
 						switch (a->second->type)
@@ -1579,17 +1643,17 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_SetFloatData: Invalid data specified");
+			Utility::logError("Streamer_SetFloatData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_SetFloatData: Invalid ID specified");
+			Utility::logError("Streamer_SetFloatData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_SetFloatData: Invalid type specified");
+			Utility::logError("Streamer_SetFloatData: Invalid type specified");
 			break;
 		}
 	}
@@ -1608,6 +1672,26 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::getFirstValueInContainer(o->second->areas);
+					}
+					case AttachedObject:
+					{
+						if (o->second->attach)
+						{
+							return o->second->attach->object;
+						}
+						return INVALID_STREAMER_ID;
+					}
+					case AttachedPlayer:
+					{
+						if (o->second->attach)
+						{
+							return o->second->attach->player;
+						}
+						return INVALID_GENERIC_ID;
+					}
 					case AttachedVehicle:
 					{
 						if (o->second->attach)
@@ -1631,6 +1715,17 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 					case PlayerID:
 					{
 						return Utility::getFirstValueInContainer(o->second->players);
+					}
+					case SyncRotation:
+					{
+						if (o->second->attach)
+						{
+							if (o->second->attach->object != INVALID_STREAMER_ID)
+							{
+								return o->second->attach->syncRotation != 0;
+							}
+						}
+						return 0;
 					}
 					case WorldID:
 					{
@@ -1656,6 +1751,10 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::getFirstValueInContainer(p->second->areas);
+					}
 					case ExtraID:
 					{
 						return Utility::getFirstValueInContainer(p->second->extras);
@@ -1700,6 +1799,10 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::getFirstValueInContainer(c->second->areas);
+					}
 					case ExtraID:
 					{
 						return Utility::getFirstValueInContainer(c->second->extras);
@@ -1736,6 +1839,10 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::getFirstValueInContainer(r->second->areas);
+					}
 					case ExtraID:
 					{
 						return Utility::getFirstValueInContainer(r->second->extras);
@@ -1776,6 +1883,10 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::getFirstValueInContainer(m->second->areas);
+					}
 					case Color:
 					{
 						return m->second->color;
@@ -1824,6 +1935,10 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::getFirstValueInContainer(t->second->areas);
+					}
 					case AttachedPlayer:
 					{
 						if (t->second->attach)
@@ -1890,7 +2005,7 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 						{
 							return a->second->attach->object.get<0>();
 						}
-						return INVALID_GENERIC_ID;
+						return INVALID_STREAMER_ID;
 					}
 					case AttachedPlayer:
 					{
@@ -1951,17 +2066,17 @@ int Manipulation::getIntData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_GetIntData: Invalid data specified");
+			Utility::logError("Streamer_GetIntData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_GetIntData: Invalid ID specified");
+			Utility::logError("Streamer_GetIntData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_GetIntData: Invalid type specified");
+			Utility::logError("Streamer_GetIntData: Invalid type specified");
 			break;
 		}
 	}
@@ -1981,11 +2096,99 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::setFirstValueInContainer(o->second->areas, static_cast<int>(params[4])) != 0;
+					}
+					case AttachedObject:
+					{
+						if (static_cast<int>(params[4]) != INVALID_STREAMER_ID)
+						{
+							if (o->second->move)
+							{
+								Utility::logError("Streamer_SetIntData: Object is currently moving and must be stopped first");
+								return 0;
+							}
+							if (sampgdk::FindNative("SetPlayerGravity") == NULL)
+							{
+								Utility::logError("Streamer_SetIntData: YSF plugin must be loaded to attach objects to objects");
+								return 0;
+							}
+							o->second->attach = boost::intrusive_ptr<Item::Object::Attach>(new Item::Object::Attach);
+							o->second->attach->player = INVALID_GENERIC_ID;
+							o->second->attach->vehicle = INVALID_GENERIC_ID;
+							o->second->attach->object = static_cast<int>(params[4]);
+							o->second->attach->offset.setZero();
+							o->second->attach->rotation.setZero();
+							o->second->attach->syncRotation = true;
+							core->getStreamer()->attachedObjects.insert(o->second);
+							update = true;
+						}
+						else
+						{
+							if (o->second->attach)
+							{
+								if (o->second->attach->object != INVALID_STREAMER_ID)
+								{
+									o->second->attach.reset();
+									core->getStreamer()->attachedObjects.erase(o->second);
+									core->getGrid()->removeObject(o->second, true);
+									update = true;
+								}
+							}
+						}
+						break;
+					}
+					case AttachedPlayer:
+					{
+						if (static_cast<int>(params[4]) != INVALID_GENERIC_ID)
+						{
+							if (o->second->move)
+							{
+								Utility::logError("Streamer_SetIntData: Object is currently moving and must be stopped first");
+								return 0;
+							}
+							if (sampgdk::FindNative("SetPlayerGravity") == NULL)
+							{
+								Utility::logError("Streamer_SetIntData: YSF plugin must be loaded to attach objects to players");
+								return 0;
+							}
+							o->second->attach = boost::intrusive_ptr<Item::Object::Attach>(new Item::Object::Attach);
+							o->second->attach->object = INVALID_STREAMER_ID;
+							o->second->attach->vehicle = INVALID_GENERIC_ID;
+							o->second->attach->player = static_cast<int>(params[4]);
+							o->second->attach->offset.setZero();
+							o->second->attach->rotation.setZero();
+							core->getStreamer()->attachedObjects.insert(o->second);
+							update = true;
+						}
+						else
+						{
+							if (o->second->attach)
+							{
+								if (o->second->attach->player != INVALID_GENERIC_ID)
+								{
+									o->second->attach.reset();
+									core->getStreamer()->attachedObjects.erase(o->second);
+									core->getGrid()->removeObject(o->second, true);
+									update = true;
+								}
+							}
+						}
+						break;
+					}
 					case AttachedVehicle:
 					{
 						if (static_cast<int>(params[4]) != INVALID_GENERIC_ID)
 						{
+							if (o->second->move)
+							{
+								Utility::logError("Streamer_SetIntData: Object is currently moving and must be stopped first");
+								return 0;
+							}
 							o->second->attach = boost::intrusive_ptr<Item::Object::Attach>(new Item::Object::Attach);
+							o->second->attach->object = INVALID_STREAMER_ID;
+							o->second->attach->player = INVALID_GENERIC_ID;
 							o->second->attach->vehicle = static_cast<int>(params[4]);
 							o->second->attach->offset.setZero();
 							o->second->attach->rotation.setZero();
@@ -2025,6 +2228,18 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 					{
 						return Utility::setFirstValueInContainer(o->second->players, static_cast<int>(params[4])) != 0;
 					}
+					case SyncRotation:
+					{
+						if (o->second->attach)
+						{
+							if (o->second->attach->object != INVALID_GENERIC_ID)
+							{
+								o->second->attach->syncRotation = static_cast<int>(params[4]) != 0;
+								update = true;
+							}
+						}
+						break;
+					}
 					case WorldID:
 					{
 						return Utility::setFirstValueInContainer(o->second->worlds, static_cast<int>(params[4])) != 0;
@@ -2043,8 +2258,7 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 						if (i != p->second.internalObjects.end())
 						{
 							DestroyPlayerObject(p->first, i->second);
-							i->second = CreatePlayerObject(p->first, o->second->modelID, 0.0f, 0.0f, 0.0f, o->second->rotation[0], o->second->rotation[1], o->second->rotation[2], o->second->drawDistance);
-							SetPlayerObjectPos(p->first, i->second, o->second->position[0], o->second->position[1], o->second->position[2]);
+							i->second = CreatePlayerObject(p->first, o->second->modelID, o->second->position[0], o->second->position[1], o->second->position[2], o->second->rotation[0], o->second->rotation[1], o->second->rotation[2], o->second->drawDistance);
 							if (o->second->attach)
 							{
 								if (o->second->attach->object != INVALID_GENERIC_ID)
@@ -2052,12 +2266,20 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 									boost::unordered_map<int, int>::iterator j = p->second.internalObjects.find(o->second->attach->object);
 									if (j != p->second.internalObjects.end())
 									{
-										sampgdk::InvokeNative(sampgdk::FindNative("AttachPlayerObjectToObject"), "dddffffffb", p->first, i->second, j->second, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
+										AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToObject");
+										if (native != NULL)
+										{
+											sampgdk::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
+										}
 									}
 								}
 								else if (o->second->attach->player != INVALID_GENERIC_ID)
 								{
-									sampgdk::InvokeNative(sampgdk::FindNative("AttachPlayerObjectToPlayer"), "dddffffff", p->first, i->second, o->second->attach->player, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
+									AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToPlayer");
+									if (native != NULL)
+									{
+										sampgdk::InvokeNative(native, "dddffffff", p->first, i->second, o->second->attach->player, o->second->attach->offset[0], o->second->attach->offset[1], o->second->attach->offset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
+									}
 								}
 								else if (o->second->attach->vehicle != INVALID_GENERIC_ID)
 								{
@@ -2079,13 +2301,14 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 									SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
 								}
 							}
+							if (o->second->noCameraCollision)
+							{
+								SetPlayerObjectNoCameraCol(p->first, i->second);
+							}
 						}
 					}
-					if (update)
-					{
-						return 1;
-					}
 				}
+				return 1;
 			}
 			else
 			{
@@ -2100,6 +2323,10 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::setFirstValueInContainer(p->second->areas, static_cast<int>(params[4])) != 0;
+					}
 					case ExtraID:
 					{
 						return Utility::setFirstValueInContainer(p->second->extras, static_cast<int>(params[4])) != 0;
@@ -2143,10 +2370,7 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 						i->second = CreatePickup(p->second->modelID, p->second->type, p->second->position[0], p->second->position[1], p->second->position[2], p->second->worldID);
 					}
 				}
-				if (update)
-				{
-					return 1;
-				}
+				return 1;
 			}
 			else
 			{
@@ -2161,6 +2385,10 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::setFirstValueInContainer(c->second->areas, static_cast<int>(params[4])) != 0;
+					}
 					case ExtraID:
 					{
 						return Utility::setFirstValueInContainer(c->second->extras, static_cast<int>(params[4])) != 0;
@@ -2199,6 +2427,10 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::setFirstValueInContainer(r->second->areas, static_cast<int>(params[4])) != 0;
+					}
 					case ExtraID:
 					{
 						return Utility::setFirstValueInContainer(r->second->extras, static_cast<int>(params[4])) != 0;
@@ -2234,14 +2466,11 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 						if (p->second.visibleRaceCheckpoint == r->first)
 						{
 							DisablePlayerRaceCheckpoint(p->first);
-							SetPlayerRaceCheckpoint(p->first, r->second->type, r->second->position[0], r->second->position[1], r->second->position[2], r->second->next[0], r->second->next[1], r->second->next[2], r->second->size);
+							p->second.delayedRaceCheckpoint = r->first;
 						}
 					}
 				}
-				if (update)
-				{
-					return 1;
-				}
+				return 1;
 			}
 			else
 			{
@@ -2256,6 +2485,10 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::setFirstValueInContainer(m->second->areas, static_cast<int>(params[4])) != 0;
+					}
 					case Color:
 					{
 						m->second->color = static_cast<int>(params[4]);
@@ -2308,10 +2541,7 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 						}
 					}
 				}
-				if (update)
-				{
-					return 1;
-				}
+				return 1;
 			}
 			else
 			{
@@ -2326,6 +2556,10 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 			{
 				switch (static_cast<int>(params[3]))
 				{
+					case AreaID:
+					{
+						return Utility::setFirstValueInContainer(t->second->areas, static_cast<int>(params[4])) != 0;
+					}
 					case AttachedPlayer:
 					{
 						if (static_cast<int>(params[4]) != INVALID_GENERIC_ID)
@@ -2429,10 +2663,7 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 						}
 					}
 				}
-				if (update)
-				{
-					return 1;
-				}
+				return 1;
 			}
 			else
 			{
@@ -2449,7 +2680,7 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 				{
 					case AttachedObject:
 					{
-						sampgdk::logprintf("*** Streamer_SetFloatData: Use AttachDynamicAreaToObject to adjust attached area data");
+						Utility::logError("Streamer_SetIntData: Use AttachDynamicAreaToObject to adjust attached area data");
 						return 0;
 					}
 					case AttachedPlayer:
@@ -2457,9 +2688,9 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 						if (static_cast<int>(params[4]) != INVALID_GENERIC_ID)
 						{
 							a->second->attach = boost::intrusive_ptr<Item::Area::Attach>(new Item::Area::Attach);
-							a->second->attach->object.get<0>() = INVALID_GENERIC_ID;
-							a->second->attach->player = static_cast<int>(params[4]);
+							a->second->attach->object = boost::make_tuple(INVALID_STREAMER_ID, STREAMER_OBJECT_TYPE_DYNAMIC, INVALID_PLAYER_ID);
 							a->second->attach->vehicle = INVALID_GENERIC_ID;
+							a->second->attach->player = static_cast<int>(params[4]);
 							core->getStreamer()->attachedAreas.insert(a->second);
 							return 1;
 						}
@@ -2483,7 +2714,7 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 						if (static_cast<int>(params[4]) != INVALID_GENERIC_ID)
 						{
 							a->second->attach = boost::intrusive_ptr<Item::Area::Attach>(new Item::Area::Attach);
-							a->second->attach->object.get<0>() = INVALID_GENERIC_ID;
+							a->second->attach->object = boost::make_tuple(INVALID_STREAMER_ID, STREAMER_OBJECT_TYPE_DYNAMIC, INVALID_PLAYER_ID);
 							a->second->attach->player = INVALID_GENERIC_ID;
 							a->second->attach->vehicle = static_cast<int>(params[4]);
 							core->getStreamer()->attachedAreas.insert(a->second);
@@ -2543,17 +2774,17 @@ int Manipulation::setIntData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_SetIntData: Invalid data specified");
+			Utility::logError("Streamer_SetIntData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_SetIntData: Invalid ID specified");
+			Utility::logError("Streamer_SetIntData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_SetIntData: Invalid type specified");
+			Utility::logError("Streamer_SetIntData: Invalid type specified");
 			break;
 		}
 	}
@@ -2597,12 +2828,19 @@ int Manipulation::getArrayData(AMX *amx, cell *params)
 		}
 		case STREAMER_TYPE_AREA:
 		{
-			result = getArrayDataForItem(core->getData()->areas, amx, static_cast<int>(params[2]), static_cast<int>(params[3]), params[4], params[5], error);
-			break;
-		}
-		default:
-		{
-			error = InvalidType;
+			switch (static_cast<int>(params[3]))
+			{
+				case AreaID:
+				{
+					error = InvalidData;
+					break;
+				}
+				default:
+				{
+					result = getArrayDataForItem(core->getData()->areas, amx, static_cast<int>(params[2]), static_cast<int>(params[3]), params[4], params[5], error);
+					break;
+				}
+			}
 			break;
 		}
 	}
@@ -2610,17 +2848,17 @@ int Manipulation::getArrayData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_GetArrayData: Invalid data specified");
+			Utility::logError("Streamer_GetArrayData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_GetArrayData: Invalid ID specified");
+			Utility::logError("Streamer_GetArrayData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_GetArrayData: Invalid type specified");
+			Utility::logError("Streamer_GetArrayData: Invalid type specified");
 			break;
 		}
 		default:
@@ -2668,7 +2906,19 @@ int Manipulation::setArrayData(AMX *amx, cell *params)
 		}
 		case STREAMER_TYPE_AREA:
 		{
-			result = setArrayDataForItem(core->getData()->areas, amx, static_cast<int>(params[2]), static_cast<int>(params[3]), params[4], params[5], error);
+			switch (static_cast<int>(params[3]))
+			{
+				case AreaID:
+				{
+					error = InvalidData;
+					break;
+				}
+				default:
+				{
+					result = setArrayDataForItem(core->getData()->areas, amx, static_cast<int>(params[2]), static_cast<int>(params[3]), params[4], params[5], error);
+					break;
+				}
+			}
 			break;
 		}
 		default:
@@ -2681,17 +2931,17 @@ int Manipulation::setArrayData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_SetArrayData: Invalid data specified");
+			Utility::logError("Streamer_SetArrayData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_SetArrayData: Invalid ID specified");
+			Utility::logError("Streamer_SetArrayData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_SetArrayData: Invalid type specified");
+			Utility::logError("Streamer_SetArrayData: Invalid type specified");
 			break;
 		}
 		default:
@@ -2739,7 +2989,19 @@ int Manipulation::isInArrayData(AMX *amx, cell *params)
 		}
 		case STREAMER_TYPE_AREA:
 		{
-			result = isInArrayDataForItem(core->getData()->areas, static_cast<int>(params[2]), static_cast<int>(params[3]), static_cast<int>(params[4]), error);
+			switch (static_cast<int>(params[3]))
+			{
+				case AreaID:
+				{
+					error = InvalidData;
+					break;
+				}
+				default:
+				{
+					result = isInArrayDataForItem(core->getData()->areas, static_cast<int>(params[2]), static_cast<int>(params[3]), static_cast<int>(params[4]), error);
+					break;
+				}
+			}
 			break;
 		}
 		default:
@@ -2752,17 +3014,17 @@ int Manipulation::isInArrayData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_IsInArrayData: Invalid data specified");
+			Utility::logError("Streamer_IsInArrayData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_IsInArrayData: Invalid ID specified");
+			Utility::logError("Streamer_IsInArrayData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_IsInArrayData: Invalid type specified");
+			Utility::logError("Streamer_IsInArrayData: Invalid type specified");
 			break;
 		}
 		default:
@@ -2810,7 +3072,19 @@ int Manipulation::appendArrayData(AMX *amx, cell *params)
 		}
 		case STREAMER_TYPE_AREA:
 		{
-			result = appendArrayDataForItem(core->getData()->areas, static_cast<int>(params[2]), static_cast<int>(params[3]), static_cast<int>(params[4]), error);
+			switch (static_cast<int>(params[3]))
+			{
+				case AreaID:
+				{
+					error = InvalidData;
+					break;
+				}
+				default:
+				{
+					result = appendArrayDataForItem(core->getData()->areas, static_cast<int>(params[2]), static_cast<int>(params[3]), static_cast<int>(params[4]), error);
+					break;
+				}
+			}
 			break;
 		}
 		default:
@@ -2823,17 +3097,17 @@ int Manipulation::appendArrayData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_AppendArrayData: Invalid data specified");
+			Utility::logError("Streamer_AppendArrayData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_AppendArrayData: Invalid ID specified");
+			Utility::logError("Streamer_AppendArrayData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_AppendArrayData: Invalid type specified");
+			Utility::logError("Streamer_AppendArrayData: Invalid type specified");
 			break;
 		}
 		default:
@@ -2881,7 +3155,19 @@ int Manipulation::removeArrayData(AMX *amx, cell *params)
 		}
 		case STREAMER_TYPE_AREA:
 		{
-			result = removeArrayDataForItem(core->getData()->areas, static_cast<int>(params[2]), static_cast<int>(params[3]), static_cast<int>(params[4]), error);
+			switch (static_cast<int>(params[3]))
+			{
+				case AreaID:
+				{
+					error = InvalidData;
+					break;
+				}
+				default:
+				{
+					result = removeArrayDataForItem(core->getData()->areas, static_cast<int>(params[2]), static_cast<int>(params[3]), static_cast<int>(params[4]), error);
+					break;
+				}
+			}
 			break;
 		}
 		default:
@@ -2894,17 +3180,17 @@ int Manipulation::removeArrayData(AMX *amx, cell *params)
 	{
 		case InvalidData:
 		{
-			sampgdk::logprintf("*** Streamer_RemoveArrayData: Invalid data specified");
+			Utility::logError("Streamer_RemoveArrayData: Invalid data specified");
 			break;
 		}
 		case InvalidID:
 		{
-			sampgdk::logprintf("*** Streamer_RemoveArrayData: Invalid ID specified");
+			Utility::logError("Streamer_RemoveArrayData: Invalid ID specified");
 			break;
 		}
 		case InvalidType:
 		{
-			sampgdk::logprintf("*** Streamer_RemoveArrayData: Invalid type specified");
+			Utility::logError("Streamer_RemoveArrayData: Invalid type specified");
 			break;
 		}
 		default:

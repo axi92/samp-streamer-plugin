@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ public:
 	float getGlobalRadiusMultiplier(int type);
 	bool setGlobalRadiusMultiplier(int type, float value);
 
+	bool errorCallbackEnabled;
+
 	std::set<AMX*> interfaces;
 
 	boost::unordered_map<int, int> internalPickups;
@@ -52,6 +54,8 @@ public:
 	boost::unordered_map<int, Item::SharedTextLabel> textLabels;
 
 	boost::unordered_map<int, Player> players;
+
+	std::vector<int> typePriority;
 private:
 	std::size_t globalMaxItems[STREAMER_MAX_TYPES];
 	std::size_t globalMaxVisibleItems[STREAMER_MAX_TYPES];

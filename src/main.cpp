@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,14 +58,20 @@ AMX_NATIVE_INFO natives[] =
 	{ "Streamer_SetVisibleItems", Natives::Streamer_SetVisibleItems },
 	{ "Streamer_GetRadiusMultiplier", Natives::Streamer_GetRadiusMultiplier },
 	{ "Streamer_SetRadiusMultiplier", Natives::Streamer_SetRadiusMultiplier },
+	{ "Streamer_GetTypePriority", Natives::Streamer_GetTypePriority },
+	{ "Streamer_SetTypePriority", Natives::Streamer_SetTypePriority },
 	{ "Streamer_GetCellDistance", Natives::Streamer_GetCellDistance },
 	{ "Streamer_SetCellDistance", Natives::Streamer_SetCellDistance },
 	{ "Streamer_GetCellSize", Natives::Streamer_GetCellSize },
 	{ "Streamer_SetCellSize", Natives::Streamer_SetCellSize },
+	{ "Streamer_ToggleErrorCallback", Natives::Streamer_ToggleErrorCallback },
+	{ "Streamer_IsToggleErrorCallback", Natives::Streamer_IsToggleErrorCallback },
 	// Updates
 	{ "Streamer_ProcessActiveItems", Natives::Streamer_ProcessActiveItems },
 	{ "Streamer_ToggleIdleUpdate", Natives::Streamer_ToggleIdleUpdate },
 	{ "Streamer_IsToggleIdleUpdate", Natives::Streamer_IsToggleIdleUpdate },
+	{ "Streamer_ToggleCameraUpdate", Natives::Streamer_ToggleCameraUpdate },
+	{ "Streamer_IsToggleCameraUpdate", Natives::Streamer_IsToggleCameraUpdate },
 	{ "Streamer_ToggleItemUpdate", Natives::Streamer_ToggleItemUpdate },
 	{ "Streamer_IsToggleItemUpdate", Natives::Streamer_IsToggleItemUpdate },
 	{ "Streamer_Update", Natives::Streamer_Update },
@@ -83,6 +89,8 @@ AMX_NATIVE_INFO natives[] =
 	{ "Streamer_GetUpperBound", Natives::Streamer_GetUpperBound },
 	// Miscellaneous
 	{ "Streamer_GetDistanceToItem", Natives::Streamer_GetDistanceToItem },
+	{ "Streamer_ToggleStaticItem", Natives::Streamer_ToggleStaticItem },
+	{ "Streamer_IsToggleStaticItem", Natives::Streamer_IsToggleStaticItem },
 	{ "Streamer_GetItemInternalID", Natives::Streamer_GetItemInternalID },
 	{ "Streamer_GetItemStreamerID", Natives::Streamer_GetItemStreamerID },
 	{ "Streamer_IsItemVisible", Natives::Streamer_IsItemVisible },
@@ -98,6 +106,8 @@ AMX_NATIVE_INFO natives[] =
 	{ "GetDynamicObjectPos", Natives::GetDynamicObjectPos },
 	{ "SetDynamicObjectRot", Natives::SetDynamicObjectRot },
 	{ "GetDynamicObjectRot", Natives::GetDynamicObjectRot },
+	{ "SetDynamicObjectNoCameraCol", Natives::SetDynamicObjectNoCameraCol },
+	{ "GetDynamicObjectNoCameraCol", Natives::GetDynamicObjectNoCameraCol },
 	{ "MoveDynamicObject", Natives::MoveDynamicObject },
 	{ "StopDynamicObject", Natives::StopDynamicObject },
 	{ "IsDynamicObjectMoving", Natives::IsDynamicObjectMoving },
@@ -106,8 +116,10 @@ AMX_NATIVE_INFO natives[] =
 	{ "AttachDynamicObjectToPlayer", Natives::AttachDynamicObjectToPlayer },
 	{ "AttachDynamicObjectToVehicle", Natives::AttachDynamicObjectToVehicle },
 	{ "EditDynamicObject", Natives::EditDynamicObject },
+	{ "IsDynamicObjectMaterialUsed", Natives::IsDynamicObjectMaterialUsed },
 	{ "GetDynamicObjectMaterial", Natives::GetDynamicObjectMaterial },
 	{ "SetDynamicObjectMaterial", Natives::SetDynamicObjectMaterial },
+	{ "IsDynamicObjectMaterialTextUsed", Natives::IsDynamicObjectMaterialTextUsed },
 	{ "GetDynamicObjectMaterialText", Natives::GetDynamicObjectMaterialText },
 	{ "SetDynamicObjectMaterialText", Natives::SetDynamicObjectMaterialText },
 	// Pickups
@@ -158,10 +170,12 @@ AMX_NATIVE_INFO natives[] =
 	{ "IsPlayerInAnyDynamicArea", Natives::IsPlayerInAnyDynamicArea },
 	{ "IsAnyPlayerInDynamicArea", Natives::IsAnyPlayerInDynamicArea },
 	{ "IsAnyPlayerInAnyDynamicArea", Natives::IsAnyPlayerInAnyDynamicArea },
-	{ "IsPointInDynamicArea", Natives::IsPointInDynamicArea },
-	{ "IsPointInAnyDynamicArea", Natives::IsPointInAnyDynamicArea },
 	{ "GetPlayerDynamicAreas", Natives::GetPlayerDynamicAreas },
 	{ "GetPlayerNumberDynamicAreas", Natives::GetPlayerNumberDynamicAreas },
+	{ "IsPointInDynamicArea", Natives::IsPointInDynamicArea },
+	{ "IsPointInAnyDynamicArea", Natives::IsPointInAnyDynamicArea },
+	{ "GetDynamicAreasForPoint", Natives::GetDynamicAreasForPoint },
+	{ "GetNumberDynamicAreasForPoint", Natives::GetNumberDynamicAreasForPoint },
 	{ "AttachDynamicAreaToObject", Natives::AttachDynamicAreaToObject },
 	{ "AttachDynamicAreaToPlayer", Natives::AttachDynamicAreaToPlayer },
 	{ "AttachDynamicAreaToVehicle", Natives::AttachDynamicAreaToVehicle },

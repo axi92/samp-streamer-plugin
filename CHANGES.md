@@ -1,7 +1,66 @@
 SA-MP Streamer Plugin
 =====================
+
+v2.7.9
+------
+
+- Added offsets to attached area natives
+- Made OnPlayerShootDynamicObject handle return values
+- Made GetDynamicPolygonPoints, GetPlayerDynamicAreas, and
+GetDynamicAreasForPoint return the size of the array
+- Fixed several bugs
+
+v2.7.8
+------
+
+- Added GetDynamicObjectNoCameraCol
+- Made attached objects stream in after base objects (thanks uint32)
+- Added definitions to include file for default draw distances and
+  streaming distances
+- Fixed a bug with area callbacks that could cause a server crash
+  under certain conditions
+
+v2.7.7
+------
+
+- Fixed bugs with Streamer_(Get/Set)MaxItems and
+  IsPlayerIn(Any)DynamicArea
+- Ordered the results stored in the GetPlayerDynamicAreas array by
+  player distance from the area
+- Added GetDynamicAreasForPoint (also ordered by distance) and
+  GetNumberDynamicAreasForPoint
+- Added IsDynamicObjectMaterialUsed and
+  IsDynamicObjectMaterialTextUsed
+- Added "STREAMER_ENABLE_TAGS" definition to include file which
+  turns on tags for all types of items (in the format of
+  "DynamicObject:", for example)
+
+v2.7.6
+------
+
+- Fixed various bugs
+- Added a delay to setting checkpoints in an attempt to fix the
+  checkpoint size bug
+- Made some improvements to EditDynamicObject and
+  AttachCameraToDynamicObject for non-streamed objects
+- Added SetDynamicObjectNoCameraCol, Streamer_(Is)ToggleCameraUpdate,
+  and Streamer_(Is)ToggleStaticItem
+
+v2.7.5.2
+--------
+
+- Added Streamer_OnPluginError, Streamer_ToggleErrorCallback, and
+  Streamer_IsToggleErrorCallback
+
+v2.7.5.1
+--------
+
+- Fixed pickup crash
+- Fixed moving object rotation bug
+
 v2.7.5
 ------
+
 - Updated sampgdk, resolving some issues with callbacks
 - Added type parameter to Streamer_Update(Ex)
 - Added AttachDynamicObjectToObject and AttachDynamicObjectToPlayer
@@ -12,6 +71,7 @@ v2.7.5
 
 v2.7.4
 ------
+
 - Made OnPlayerLeaveDynamicArea callbacks execute when areas are
   destroyed
 - Made OnPlayerLeaveDynamicArea callbacks execute before
@@ -21,6 +81,7 @@ v2.7.4
 
 v2.7.3
 ------
+
 - Allowed moving object rotations to be set
 - Added integrated callback hooks from sampgdk
 - Renamed CreateDynamicCube to CreateDynamicCuboid
@@ -28,6 +89,7 @@ v2.7.3
 
 v2.7.2
 ------
+
 - Made E_STREAMER_EXTRA_ID data sequential and allowed multiple
   amounts of the same value to be used
 - Allowed Streamer_(Get/Set)IntData to be used with
@@ -36,6 +98,7 @@ v2.7.2
 
 v2.7.1
 ------
+
 - Fixed some minor bugs
 - Updated sampgdk version
 
@@ -252,6 +315,7 @@ v2.1
 
 v2.0
 ----
+
 - Numerous bug fixes and optimizations
 - Added support for pickups, checkpoints, race checkpoints,
   map icons, and 3D text labels

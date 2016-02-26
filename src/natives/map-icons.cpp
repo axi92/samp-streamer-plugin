@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 
 cell AMX_NATIVE_CALL Natives::CreateDynamicMapIcon(AMX *amx, cell *params)
 {
-	CHECK_PARAMS(10, "CreateDynamicMapIcon");
+	CHECK_PARAMS(11, "CreateDynamicMapIcon");
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_MAP_ICON) == core->getData()->mapIcons.size())
 	{
 		return 0;
@@ -40,6 +40,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicMapIcon(AMX *amx, cell *params)
 	Item::SharedMapIcon mapIcon(new Item::MapIcon);
 	mapIcon->amx = amx;
 	mapIcon->mapIconID = mapIconID;
+	mapIcon->originalStreamDistance = -1.0f;
 	mapIcon->position = Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3]));
 	mapIcon->type = static_cast<int>(params[4]);
 	mapIcon->color = static_cast<int>(params[5]);
@@ -48,6 +49,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicMapIcon(AMX *amx, cell *params)
 	Utility::addToContainer(mapIcon->players, static_cast<int>(params[8]));
 	mapIcon->streamDistance = amx_ctof(params[9]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[9]) : amx_ctof(params[9]) * amx_ctof(params[9]);
 	mapIcon->style = static_cast<int>(params[10]);
+	Utility::addToContainer(mapIcon->areas, static_cast<int>(params[11]));
 	core->getGrid()->addMapIcon(mapIcon);
 	core->getData()->mapIcons.insert(std::make_pair(mapIconID, mapIcon));
 	return static_cast<cell>(mapIconID);

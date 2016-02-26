@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 
 cell AMX_NATIVE_CALL Natives::CreateDynamicRaceCP(AMX *amx, cell *params)
 {
-	CHECK_PARAMS(12, "CreateDynamicRaceCP");
+	CHECK_PARAMS(13, "CreateDynamicRaceCP");
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_RACE_CP) == core->getData()->raceCheckpoints.size())
 	{
 		return 0;
@@ -40,6 +40,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicRaceCP(AMX *amx, cell *params)
 	Item::SharedRaceCheckpoint raceCheckpoint(new Item::RaceCheckpoint);
 	raceCheckpoint->amx = amx;
 	raceCheckpoint->raceCheckpointID = raceCheckpointID;
+	raceCheckpoint->originalStreamDistance = -1.0f;
 	raceCheckpoint->type = static_cast<int>(params[1]);
 	raceCheckpoint->position = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
 	raceCheckpoint->next = Eigen::Vector3f(amx_ctof(params[5]), amx_ctof(params[6]), amx_ctof(params[7]));
@@ -48,6 +49,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicRaceCP(AMX *amx, cell *params)
 	Utility::addToContainer(raceCheckpoint->interiors, static_cast<int>(params[10]));
 	Utility::addToContainer(raceCheckpoint->players, static_cast<int>(params[11]));
 	raceCheckpoint->streamDistance = amx_ctof(params[12]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[12]) : amx_ctof(params[12]) * amx_ctof(params[12]);
+	Utility::addToContainer(raceCheckpoint->areas, static_cast<int>(params[13]));
 	core->getGrid()->addRaceCheckpoint(raceCheckpoint);
 	core->getData()->raceCheckpoints.insert(std::make_pair(raceCheckpointID, raceCheckpoint));
 	return static_cast<cell>(raceCheckpointID);

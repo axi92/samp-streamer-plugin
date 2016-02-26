@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@
 
 cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabel(AMX *amx, cell *params)
 {
-	CHECK_PARAMS(13, "CreateDynamic3DTextLabel");
+	CHECK_PARAMS(14, "CreateDynamic3DTextLabel");
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_3D_TEXT_LABEL) == core->getData()->textLabels.size())
 	{
 		return 0;
@@ -42,6 +42,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabel(AMX *amx, cell *params)
 	Item::SharedTextLabel textLabel(new Item::TextLabel);
 	textLabel->amx = amx;
 	textLabel->textLabelID = textLabelID;
+	textLabel->originalStreamDistance = -1.0f;
 	textLabel->text = Utility::convertNativeStringToString(amx, params[1]);
 	textLabel->color = static_cast<int>(params[2]);
 	textLabel->position = Eigen::Vector3f(amx_ctof(params[3]), amx_ctof(params[4]), amx_ctof(params[5]));
@@ -62,6 +63,7 @@ cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabel(AMX *amx, cell *params)
 	Utility::addToContainer(textLabel->interiors, static_cast<int>(params[11]));
 	Utility::addToContainer(textLabel->players, static_cast<int>(params[12]));
 	textLabel->streamDistance = amx_ctof(params[13]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[13]) : amx_ctof(params[13]) * amx_ctof(params[13]);
+	Utility::addToContainer(textLabel->areas, static_cast<int>(params[14]));
 	core->getGrid()->addTextLabel(textLabel);
 	core->getData()->textLabels.insert(std::make_pair(textLabelID, textLabel));
 	return static_cast<cell>(textLabelID);

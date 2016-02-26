@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Incognito
+ * Copyright (C) 2016 Incognito
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ namespace Item
 			Attach();
 
 			boost::tuple<int, int, int> object;
+			Eigen::Vector3f offset;
 			int player;
 			Eigen::Vector3f position;
 			int references;
@@ -66,6 +67,7 @@ namespace Item
 
 		boost::intrusive_ptr<Attach> attach;
 
+		boost::unordered_set<int> areas;
 		std::vector<int> extras;
 		boost::unordered_set<int> interiors;
 		std::bitset<MAX_PLAYERS> players;
@@ -83,11 +85,13 @@ namespace Item
 		AMX *amx;
 		SharedCell cell;
 		int checkpointID;
+		float originalStreamDistance;
 		Eigen::Vector3f position;
 		int references;
 		float size;
 		float streamDistance;
 
+		boost::unordered_set<int> areas;
 		std::vector<int> extras;
 		boost::unordered_set<int> interiors;
 		std::bitset<MAX_PLAYERS> players;
@@ -106,12 +110,14 @@ namespace Item
 		SharedCell cell;
 		int color;
 		int mapIconID;
+		float originalStreamDistance;
 		Eigen::Vector3f position;
 		int references;
 		float streamDistance;
 		int style;
 		int type;
 
+		boost::unordered_set<int> areas;
 		std::vector<int> extras;
 		boost::unordered_set<int> interiors;
 		std::bitset<MAX_PLAYERS> players;
@@ -130,7 +136,9 @@ namespace Item
 		SharedCell cell;
 		float drawDistance;
 		int modelID;
+		bool noCameraCollision;
 		int objectID;
+		float originalStreamDistance;
 		Eigen::Vector3f position;
 		int references;
 		Eigen::Vector3f rotation;
@@ -205,6 +213,7 @@ namespace Item
 
 		boost::intrusive_ptr<Move> move;
 
+		boost::unordered_set<int> areas;
 		std::vector<int> extras;
 		boost::unordered_set<int> interiors;
 		std::bitset<MAX_PLAYERS> players;
@@ -222,6 +231,7 @@ namespace Item
 		AMX *amx;
 		SharedCell cell;
 		int modelID;
+		float originalStreamDistance;
 		int pickupID;
 		Eigen::Vector3f position;
 		int references;
@@ -229,6 +239,7 @@ namespace Item
 		int type;
 		int worldID;
 
+		boost::unordered_set<int> areas;
 		std::vector<int> extras;
 		boost::unordered_set<int> interiors;
 		std::bitset<MAX_PLAYERS> players;
@@ -246,6 +257,7 @@ namespace Item
 		AMX *amx;
 		SharedCell cell;
 		Eigen::Vector3f next;
+		float originalStreamDistance;
 		Eigen::Vector3f position;
 		int raceCheckpointID;
 		int references;
@@ -253,6 +265,7 @@ namespace Item
 		float streamDistance;
 		int type;
 
+		boost::unordered_set<int> areas;
 		std::vector<int> extras;
 		boost::unordered_set<int> interiors;
 		std::bitset<MAX_PLAYERS> players;
@@ -271,6 +284,7 @@ namespace Item
 		SharedCell cell;
 		int color;
 		float drawDistance;
+		float originalStreamDistance;
 		Eigen::Vector3f position;
 		int references;
 		float streamDistance;
@@ -290,6 +304,7 @@ namespace Item
 
 		boost::intrusive_ptr<Attach> attach;
 
+		boost::unordered_set<int> areas;
 		std::vector<int> extras;
 		boost::unordered_set<int> interiors;
 		std::bitset<MAX_PLAYERS> players;
